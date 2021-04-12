@@ -1,0 +1,24 @@
+<nav class="navbar navbar-dark bg-dark" style="background-color: #e3f2fd;">
+  <a class="navbar-brand" href="{% url 'index' %}">
+    <span style="color:rgba(255, 0, 0, 0.938)">Ya</span>tube
+  </a>
+    <nav class="my-2 my-md-0 mr-md-3">
+      {% if user.is_authenticated %}
+        <li class="nav-item navbar-text">
+          <span style="color:rgb(255, 255, 255)">
+            Пользователь: 
+            <a class="p-2 text-light" href="{% url 'profile' user.username %}">
+              {{ user.username }}
+            </a>
+          </span>
+        </li>
+        <a class="p-2 text-light" href="{% url 'index' %}">Главная</a>
+        <a class="p-2 text-light" href="{% url 'new_post' %}">Новый пост</a>
+        <a class="p-2 text-light" href="{% url 'password_change' %}">Изменить пароль</a>
+        <a class="p-2 text-light" href="{% url 'logout' %}">Выйти</a>
+      {% else %}
+        <a class="p-2 text-light" href="{% url 'login' %}">Войти</a> |
+        <a class="p-2 text-light" href="{% url 'signup' %}">Регистрация</a>
+      {% endif %}
+    </nav>
+</nav> 
