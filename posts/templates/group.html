@@ -7,7 +7,7 @@
     <div class="container">  
       {{ group.description|linebreaksbr }}     
       {% for post in page %}
-        {% include "post_item.html" with post=post %}
+        {% include "post_item.html" with post=post group=group %}
       {% endfor %}
       
       {% if page.has_other_pages %}

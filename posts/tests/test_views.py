@@ -62,11 +62,9 @@ class PagesTests(TestCase):
         )
         cls.POST_URL = reverse('post', args=[
             AUTHOR_USERNAME, cls.post.id])
-
-    def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        cls.guest_client = Client()
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
 
     @classmethod
     def tearDownClass(cls):
@@ -84,7 +82,7 @@ class PagesTests(TestCase):
                 if 'post' in response.context:
                     post = response.context['post']
                 else:
-                    self.assertEqual(Post.objects.count(), 1)
+                    self.assertEqual(len(response.context['page']), 1)
                     post = response.context['page'][0]
                 self.assertEqual(
                     post.text,
@@ -137,6 +135,7 @@ class PagesTests(TestCase):
         сформирована с правильным контекстом.
         """
         response = self.authorized_client.get(self.POST_URL)
+        self.assertEqual(len(response.context['page']), 1)
         comment = response.context['page'][0]
         self.assertEqual(
             comment.text,
@@ -181,17 +180,31 @@ class PagesTests(TestCase):
             response.context['page']
         )
 
-    def test_authorized_user_can_follow_and_unfollow_author(self):
+    def test_authorized_user_can_follow_author(self):
         """Авторизованный пользователь может подписываться
-        на других пользователей и удалять их из подписок.
+        на других пользователей.
         """
-        self.assertEqual(Follow.objects.count(), 0)
+        self.assertFalse(
+            Follow.objects.filter(
+                user=self.user.id,
+                author=self.post.author.id
+            ).exists()
+        )
         self.authorized_client.get(PROFILE_FOLLOW_URL)
         self.assertTrue(
             Follow.objects.filter(
                 user=self.user.id,
                 author=self.post.author.id
             ).exists()
+        )
+
+    def test_authorized_user_can_unfollow_author(self):
+        """Авторизованный пользователь может удалять
+        из подписок других пользователей.
+        """
+        Follow.objects.create(
+            user=self.user,
+            author=self.post.author
         )
         self.authorized_client.get(PROFILE_UNFOLLOW_URL)
         self.assertFalse(
@@ -203,26 +216,20 @@ class PagesTests(TestCase):
 
     def test_index_page_is_cached(self):
         """Cписок постов на странице index хранится в кэше."""
-        response = self.authorized_client.get(INDEX_URL)
-        not_cached_context = response.context['page'][0]
-        form_data = {
-            'text': 'Текст, который отобразится через 20 сек',
-        }
-        self.authorized_client.post(
-            NEW_POST_URL,
-            data=form_data,
-            follow=True
+        new_post = Post.objects.create(
+            text='Текст, который отобразится через 20 сек',
+            author=self.user
         )
         cached_response = self.authorized_client.get(INDEX_URL)
-        cached_context = cached_response.context['page'][0]
-        self.assertNotEqual(
-            not_cached_context.text,
-            cached_context.text
+        self.assertNotContains(
+            cached_response,
+            new_post.text
         )
         cache.clear()
-        self.assertEqual(
-            form_data['text'],
-            cached_context.text
+        not_cached_response = self.authorized_client.get(INDEX_URL)
+        self.assertContains(
+            not_cached_response,
+            new_post.text
         )
 
 
@@ -239,7 +246,7 @@ class PaginatorViewsTest(TestCase):
     def setUp(self):
         self.client = Client()
 
-    def test_first_page_contains_ten_records(self):
+    def test_first_page_contains_expected_number_of_records(self):
         """Количество постов на первой странице index
         соотвествует ожидаемому.
         """

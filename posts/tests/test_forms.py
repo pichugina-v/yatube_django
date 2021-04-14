@@ -1,4 +1,3 @@
-import os
 import shutil
 import tempfile
 
@@ -9,7 +8,7 @@ from django.test import Client, TestCase, override_settings
 from django import forms
 
 from posts.forms import PostForm
-from posts.models import Comment, Group, Post, User
+from posts.models import Group, Post, User
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 SLUG = 'test-slug'
@@ -54,10 +53,8 @@ class FormsTest(TestCase):
         cls.COMMENT_URL = reverse('add_comment', args=[
             USERNAME, cls.post.id])
         cls.Form = PostForm()
-
-    def setUp(self):
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
 
     @classmethod
     def tearDownClass(cls):
@@ -95,9 +92,10 @@ class FormsTest(TestCase):
             new_post.group.id,
             form_data['group']
         )
-        self.assertIn(
-            os.path.relpath(new_post.image.name, start='posts'),
-            os.listdir(os.path.join(settings.MEDIA_ROOT, 'posts'))
+        print(new_post.image)
+        self.assertEqual(
+            new_post.image,
+            f'posts/{form_data["image"]}'
         )
         self.assertRedirects(response, INDEX_URL)
         self.assertEqual(
@@ -145,12 +143,20 @@ class FormsTest(TestCase):
             data=form_data,
             follow=True)
         self.assertEqual(
-            Comment.objects.count(), 1
+            len(response.context['page']), 1
         )
         new_comment = response.context['page'][0]
         self.assertEqual(
             new_comment.text,
             form_data['text']
+        )
+        self.assertEqual(
+            new_comment.author,
+            self.user
+        )
+        self.assertEqual(
+            new_comment.post.id,
+            self.post.id
         )
 
     def test_new_post_shows_correct_context(self):
@@ -170,7 +176,7 @@ class FormsTest(TestCase):
 
     def test_comments_shows_correct_context(self):
         """Шаблон comments сформирован с правильным контекстом."""
-        response = self.authorized_client.get(self.COMMENT_URL)
+        response = self.authorized_client.get(self.POST_URL)
         self.assertIsInstance(
             response.context['form'].fields['text'],
             forms.fields.CharField)

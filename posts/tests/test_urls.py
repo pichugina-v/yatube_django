@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.shortcuts import reverse
 
-from posts.models import Group, Post, User
+from posts.models import Follow, Group, Post, User
 
 SLUG = 'test-slug'
 USERNAME = 'post_author'
@@ -14,7 +14,6 @@ FOLLOW_URL = reverse('follow_index')
 PROFILE_FOLLOW_URL = reverse('profile_follow', args=[USERNAME])
 PROFILE_UNFOLLOW_URL = reverse('profile_unfollow', args=[USERNAME])
 LOGIN_URL = f'{reverse("login")}?next='
-ERROR_404 = '404/'
 
 
 class URLTests(TestCase):
@@ -33,19 +32,23 @@ class URLTests(TestCase):
             author=cls.user_author,
             group=cls.group
         )
+        cls.follow = Follow.objects.create(
+            user=cls.user_not_author,
+            author=cls.user_author
+        )
         cls.POST_URL = reverse('post', args=[
             USERNAME, cls.post.id])
+        cls.ERROR_404_URL = reverse('post', args=[
+            NOT_AUTHOR_USERNAME, cls.post.id])
         cls.POST_EDIT_URL = reverse('post_edit', args=[
             USERNAME, cls.post.id])
         cls.COMMENT_URL = reverse('add_comment', args=[
             USERNAME, cls.post.id])
-
-    def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_author = Client()
-        self.authorized_client.force_login(self.user_not_author)
-        self.authorized_author.force_login(self.user_author)
+        cls.guest_client = Client()
+        cls.authorized_client = Client()
+        cls.authorized_author = Client()
+        cls.authorized_client.force_login(cls.user_not_author)
+        cls.authorized_author.force_login(cls.user_author)
 
     def test_urls_available_for_any_client(self):
         """Страницы доступны пользователям с соответствующими правами."""
@@ -65,15 +68,14 @@ class URLTests(TestCase):
             [PROFILE_FOLLOW_URL, author, 302],
             [PROFILE_UNFOLLOW_URL, guest, 302],
             [PROFILE_UNFOLLOW_URL, not_author, 302],
-            [PROFILE_UNFOLLOW_URL, author, 302],
             [self.COMMENT_URL, guest, 302],
-            [self.COMMENT_URL, not_author, 200],
+            [self.COMMENT_URL, not_author, 302],
+            [self.COMMENT_URL, author, 302],
             [self.POST_URL, guest, 200],
             [self.POST_EDIT_URL, author, 200],
             [self.POST_EDIT_URL, guest, 302],
             [self.POST_EDIT_URL, not_author, 302],
-            [ERROR_404, guest, 404],
-            [ERROR_404, not_author, 404]
+            [self.ERROR_404_URL, guest, 404]
         ]
         for url, client, status_code in url_client_status_code_values:
             with self.subTest(url=url):
@@ -95,7 +97,6 @@ class URLTests(TestCase):
             [PROFILE_FOLLOW_URL, author, PROFILE_URL],
             [PROFILE_UNFOLLOW_URL, guest, LOGIN_URL + PROFILE_UNFOLLOW_URL],
             [PROFILE_UNFOLLOW_URL, not_author, PROFILE_URL],
-            [PROFILE_UNFOLLOW_URL, author, PROFILE_URL],
             [self.POST_EDIT_URL, not_author, self.POST_URL],
             [self.POST_EDIT_URL, guest, LOGIN_URL + self.POST_EDIT_URL],
             [self.COMMENT_URL, guest, LOGIN_URL + self.COMMENT_URL],
@@ -116,7 +117,6 @@ class URLTests(TestCase):
             [FOLLOW_URL, 'follow.html'],
             [self.POST_URL, 'post.html'],
             [self.POST_EDIT_URL, 'new.html'],
-            [self.COMMENT_URL, 'comments.html']
         ]
         for url, template in templates_urls_names:
             with self.subTest(url=url):

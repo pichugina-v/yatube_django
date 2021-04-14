@@ -198,8 +198,8 @@ class FollowModelTest(TestCase):
         первые 15 символов comment.text, comment.group
         """
         follow = self.follow
-        expected_objects_names = (f'{follow.user.username}, '
-                                  f'{follow.author.username}')
+        expected_objects_names = (f'Подписчик: {follow.user.username}, '
+                                  f'автор: {follow.author.username}')
         self.assertEqual(
             expected_objects_names,
             str(follow)
