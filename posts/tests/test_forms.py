@@ -92,7 +92,6 @@ class FormsTest(TestCase):
             new_post.group.id,
             form_data['group']
         )
-        print(new_post.image)
         self.assertEqual(
             new_post.image,
             f'posts/{form_data["image"]}'
@@ -155,8 +154,8 @@ class FormsTest(TestCase):
             self.user
         )
         self.assertEqual(
-            new_comment.post.id,
-            self.post.id
+            new_comment.post,
+            self.post
         )
 
     def test_new_post_shows_correct_context(self):

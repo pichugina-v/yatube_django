@@ -216,20 +216,21 @@ class PagesTests(TestCase):
 
     def test_index_page_is_cached(self):
         """Cписок постов на странице index хранится в кэше."""
-        new_post = Post.objects.create(
+        response = self.authorized_client.get(INDEX_URL)
+        Post.objects.create(
             text='Текст, который отобразится через 20 сек',
             author=self.user
         )
         cached_response = self.authorized_client.get(INDEX_URL)
-        self.assertNotContains(
-            cached_response,
-            new_post.text
+        self.assertEqual(
+            response.content,
+            cached_response.content
         )
         cache.clear()
         not_cached_response = self.authorized_client.get(INDEX_URL)
-        self.assertContains(
-            not_cached_response,
-            new_post.text
+        self.assertNotEqual(
+            response.content,
+            not_cached_response.content
         )
 
 

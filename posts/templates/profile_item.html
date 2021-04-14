@@ -12,26 +12,30 @@
       </div>
     </div>
     <ul class="list-group list-group-flush">
+      {% if author != request.user %}
+        <li class="list-group-item">
+          <div class="h6 text-muted">        
+              {% if following %}
+                <a class="btn btn-lg btn-light" 
+                  href="{% url 'profile_unfollow' author.username %}"
+                  role="button"> 
+                  Отписаться 
+                </a> 
+              {% else %}
+                <a class="btn btn-lg btn-primary" 
+                  href="{% url 'profile_follow' author.username %}"
+                  role="button">
+                  Подписаться 
+                </a>
+              {% endif %}
+          </div>
+        </li>
+      {% endif %}
       <li class="list-group-item">
         <div class="h6 text-muted">
           Подписчиков: {{ author.following.count }} <br/>
           Подписан: {{ author.follower.count }} 
         </div>
-        {% if author != request.user %}
-          {% if following %}
-            <a class="btn btn-lg btn-light" 
-              href="{% url 'profile_unfollow' author.username %}"
-              role="button"> 
-              Отписаться 
-            </a> 
-          {% else %}
-            <a class="btn btn-lg btn-primary" 
-              href="{% url 'profile_follow' author.username %}"
-              role="button">
-              Подписаться 
-            </a>
-        {% endif %}
-      {% endif %}
       </li>
       <li class="list-group-item">
         <div class="h6 text-muted">

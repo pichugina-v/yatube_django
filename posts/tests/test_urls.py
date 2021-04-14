@@ -1,7 +1,7 @@
-from django.test import TestCase, Client
 from django.shortcuts import reverse
+from django.test import TestCase, Client
 
-from posts.models import Follow, Group, Post, User
+from posts.models import Group, Post, User
 
 SLUG = 'test-slug'
 USERNAME = 'post_author'
@@ -14,6 +14,7 @@ FOLLOW_URL = reverse('follow_index')
 PROFILE_FOLLOW_URL = reverse('profile_follow', args=[USERNAME])
 PROFILE_UNFOLLOW_URL = reverse('profile_unfollow', args=[USERNAME])
 LOGIN_URL = f'{reverse("login")}?next='
+ERROR_404_URL = '4e567tgt8hu9/'
 
 
 class URLTests(TestCase):
@@ -32,14 +33,8 @@ class URLTests(TestCase):
             author=cls.user_author,
             group=cls.group
         )
-        cls.follow = Follow.objects.create(
-            user=cls.user_not_author,
-            author=cls.user_author
-        )
         cls.POST_URL = reverse('post', args=[
             USERNAME, cls.post.id])
-        cls.ERROR_404_URL = reverse('post', args=[
-            NOT_AUTHOR_USERNAME, cls.post.id])
         cls.POST_EDIT_URL = reverse('post_edit', args=[
             USERNAME, cls.post.id])
         cls.COMMENT_URL = reverse('add_comment', args=[
@@ -75,7 +70,7 @@ class URLTests(TestCase):
             [self.POST_EDIT_URL, author, 200],
             [self.POST_EDIT_URL, guest, 302],
             [self.POST_EDIT_URL, not_author, 302],
-            [self.ERROR_404_URL, guest, 404]
+            [ERROR_404_URL, guest, 404]
         ]
         for url, client, status_code in url_client_status_code_values:
             with self.subTest(url=url):
