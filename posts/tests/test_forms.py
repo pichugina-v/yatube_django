@@ -22,6 +22,7 @@ TEST_IMAGE = (b'\x47\x49\x46\x38\x39\x61\x01\x00'
               b'\x00\x00\x01\x00\x01\x00\x00\x02'
               b'\x02\x4c\x01\x00\x3b')
 IMAGE_NAME = 'image.gif'
+SECOND_IMAGE_NAME = 'second_image.gif'
 IMAGE_TYPE = 'image/gif'
 
 
@@ -36,15 +37,25 @@ class FormsTest(TestCase):
             slug=SLUG,
             description='Тестовое описание группы'
         )
-        cls.post = Post.objects.create(
-            text='Текст первого поста',
-            author=cls.user,
-            group=cls.group
+        cls.image = SimpleUploadedFile(
+            name=IMAGE_NAME,
+            content=TEST_IMAGE,
+            content_type=IMAGE_TYPE
         )
         cls.image = SimpleUploadedFile(
             name=IMAGE_NAME,
             content=TEST_IMAGE,
             content_type=IMAGE_TYPE
+        )
+        cls.second_image = SimpleUploadedFile(
+            name=SECOND_IMAGE_NAME,
+            content=TEST_IMAGE,
+            content_type=IMAGE_TYPE
+        )
+        cls.post = Post.objects.create(
+            text='Текст первого поста',
+            author=cls.user,
+            group=cls.group
         )
         cls.POST_URL = reverse('post', args=[
             USERNAME, cls.post.id])
@@ -63,7 +74,6 @@ class FormsTest(TestCase):
 
     def test_create_new_post(self):
         """Валидная форма создает запись в Post."""
-        posts_count = Post.objects.count()
         existing_posts_id = tuple(
             Post.objects.all().values_list('id', flat=True)
         )
@@ -77,13 +87,11 @@ class FormsTest(TestCase):
             data=form_data,
             follow=True
         )
-        new_query_objects = Post.objects.all().exclude(
-            id__in=existing_posts_id
-        )
+        new_post = response.context['page']
         self.assertEqual(
-            new_query_objects.count(), 1
+            Post.objects.all().exclude(id__in=existing_posts_id).count(), 1
         )
-        new_post = new_query_objects.last()
+        new_post = Post.objects.all().exclude(id__in=existing_posts_id).last()
         self.assertEqual(
             new_post.text,
             form_data['text']
@@ -97,10 +105,6 @@ class FormsTest(TestCase):
             f'posts/{form_data["image"]}'
         )
         self.assertRedirects(response, INDEX_URL)
-        self.assertEqual(
-            Post.objects.count(),
-            posts_count + 1
-        )
 
     def test_edit_existing_post(self):
         """Валидная форма редактирует запись в Post."""
@@ -110,7 +114,8 @@ class FormsTest(TestCase):
         )
         form_data = {
             'text': 'Отредактированный текст первого поста',
-            'group': new_group.id
+            'group': new_group.id,
+            'image': self.second_image
         }
         response = self.authorized_client.post(
             self.POST_EDIT_URL,
@@ -129,6 +134,10 @@ class FormsTest(TestCase):
         self.assertEqual(
             updated_post.group.id,
             form_data['group']
+        )
+        self.assertEqual(
+            updated_post.image,
+            f'posts/{form_data["image"]}'
         )
         self.assertRedirects(response, self.POST_URL)
 
