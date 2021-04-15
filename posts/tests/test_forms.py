@@ -87,11 +87,9 @@ class FormsTest(TestCase):
             data=form_data,
             follow=True
         )
-        new_post = response.context['page']
-        self.assertEqual(
-            Post.objects.all().exclude(id__in=existing_posts_id).count(), 1
-        )
-        new_post = Post.objects.all().exclude(id__in=existing_posts_id).last()
+        for i in range(len(response.context['page'])):
+            if response.context['page'][i].id not in existing_posts_id:
+                new_post = response.context['page'][i]
         self.assertEqual(
             new_post.text,
             form_data['text']
