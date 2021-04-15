@@ -8,7 +8,7 @@ from django.test import Client, TestCase, override_settings
 from django import forms
 
 from posts.forms import PostForm
-from posts.models import Group, Post, User
+from posts.models import Comment, Group, Post, User
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 SLUG = 'test-slug'
@@ -16,6 +16,7 @@ NEW_SLUG = 'new-test-slug'
 USERNAME = 'test_name'
 INDEX_URL = reverse('index')
 NEW_POST_URL = reverse('new_post')
+LOGIN_URL = f'{reverse("login")}?next='
 TEST_IMAGE = (b'\x47\x49\x46\x38\x39\x61\x01\x00'
               b'\x01\x00\x00\x00\x00\x21\xf9\x04'
               b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
@@ -64,6 +65,7 @@ class FormsTest(TestCase):
         cls.COMMENT_URL = reverse('add_comment', args=[
             USERNAME, cls.post.id])
         cls.Form = PostForm()
+        cls.guest_client = Client()
         cls.authorized_client = Client()
         cls.authorized_client.force_login(cls.user)
 
@@ -139,6 +141,28 @@ class FormsTest(TestCase):
         )
         self.assertRedirects(response, self.POST_URL)
 
+    def test_anonymous_can_not_create_post(self):
+        """Аноним не может создавать посты."""
+        posts_count = Post.objects.count()
+        form_data = {
+            'text': 'Пост, который не создастся',
+        }
+        response = self.guest_client.post(
+            NEW_POST_URL,
+            data=form_data,
+            follow=True
+        )
+        self.assertFalse(
+            Post.objects.filter(
+                text=form_data['text']
+            ).exists()
+        )
+        self.assertEqual(
+            Post.objects.count(),
+            posts_count
+        )
+        self.assertRedirects(response, LOGIN_URL + NEW_POST_URL)
+
     def test_authorized_user_can_add_comment(self):
         """Авторизированный пользователь может
         комментировать посты.
@@ -164,6 +188,25 @@ class FormsTest(TestCase):
             new_comment.post,
             self.post
         )
+
+    def test_anonymous_can_not_add_comment(self):
+        """Аноним не может комментировать посты."""
+        comments_count = Comment.objects.count()
+        form_data = {'text': 'Комментарий, который не опубликуется'}
+        response = self.guest_client.post(
+            self.COMMENT_URL,
+            data=form_data,
+            follow=True)
+        self.assertFalse(
+            Comment.objects.filter(
+                text=form_data['text']
+            ).exists()
+        )
+        self.assertEqual(
+            Comment.objects.count(),
+            comments_count
+        )
+        self.assertRedirects(response, LOGIN_URL + self.COMMENT_URL)
 
     def test_new_post_shows_correct_context(self):
         """Шаблон new сформирован с правильным контекстом."""
