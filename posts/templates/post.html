@@ -9,7 +9,7 @@
     </div>
 
     <div class="col-md-9">
-      {% include "post_item.html" with post=post %}
+      {% include "post_item.html" with post=post disable_add_comment_button=True %}
       {% include 'comments.html' %}
     </div>
   </div>

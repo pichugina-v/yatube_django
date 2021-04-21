@@ -14,7 +14,7 @@
     <ul class="list-group list-group-flush">
       {% if author != request.user %}
         <li class="list-group-item">
-          <div class="h6 text-muted">        
+          <div class="h6 text-muted"> 
               {% if following %}
                 <a class="btn btn-lg btn-light" 
                   href="{% url 'profile_unfollow' author.username %}"

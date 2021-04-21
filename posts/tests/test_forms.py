@@ -76,7 +76,7 @@ class FormsTest(TestCase):
 
     def test_create_new_post(self):
         """Валидная форма создает запись в Post."""
-        existing_posts_id = tuple(
+        existing_posts_id = set(
             Post.objects.all().values_list('id', flat=True)
         )
         form_data = {
@@ -89,7 +89,7 @@ class FormsTest(TestCase):
             data=form_data,
             follow=True
         )
-        for i in range(len(response.context['page'])):
+        for i in range(len(existing_posts_id)):
             if response.context['page'][i].id not in existing_posts_id:
                 new_post = response.context['page'][i]
                 self.assertEqual(
@@ -215,7 +215,7 @@ class FormsTest(TestCase):
         urls = [NEW_POST_URL, self.POST_EDIT_URL]
         form_fields = {
             'text': forms.CharField,
-            'group': forms.ModelChoiceField,
+            'group': forms.ChoiceField,
         }
         for url in urls:
             with self.subTest(url=url):
