@@ -89,21 +89,25 @@ class FormsTest(TestCase):
             data=form_data,
             follow=True
         )
-        for i in range(len(existing_posts_id)):
-            if response.context['page'][i].id not in existing_posts_id:
-                new_post = response.context['page'][i]
-                self.assertEqual(
-                    new_post.text,
-                    form_data['text']
-                )
-                self.assertEqual(
-                    new_post.group.id,
-                    form_data['group']
-                )
-                self.assertEqual(
-                    new_post.image,
-                    f'posts/{form_data["image"]}'
-                )
+        self.assertEqual(
+            Post.objects.all().exclude(
+                id__in=existing_posts_id).count(), 1
+        )
+        new_post = Post.objects.all().exclude(
+            id__in=existing_posts_id
+        ).last()
+        self.assertEqual(
+            new_post.text,
+            form_data['text']
+        )
+        self.assertEqual(
+            new_post.group.id,
+            form_data['group']
+        )
+        self.assertEqual(
+            new_post.image,
+            f'posts/{form_data["image"]}'
+        )
         self.assertRedirects(response, INDEX_URL)
 
     def test_edit_existing_post(self):
@@ -168,28 +172,32 @@ class FormsTest(TestCase):
         комментировать посты.
         """
         existing_comments_id = tuple(
-            Post.objects.all().values_list('id', flat=True)
+            Comment.objects.all().values_list('id', flat=True)
         )
         form_data = {'text': 'Текст комментария'}
-        response = self.authorized_client.post(
+        self.authorized_client.post(
             self.COMMENT_URL,
             data=form_data,
             follow=True)
-        for i in range(len(response.context['page'])):
-            if response.context['page'][i].id not in existing_comments_id:
-                new_comment = response.context['page'][i]
-                self.assertEqual(
-                    new_comment.text,
-                    form_data['text']
-                )
-                self.assertEqual(
-                    new_comment.author,
-                    self.user
-                )
-                self.assertEqual(
-                    new_comment.post,
-                    self.post
-                )
+        self.assertEqual(
+            Comment.objects.all().exclude(
+                id__in=existing_comments_id).count(), 1
+        )
+        new_comment = Comment.objects.all().exclude(
+            id__in=existing_comments_id
+        ).last()
+        self.assertEqual(
+            new_comment.text,
+            form_data['text']
+        )
+        self.assertEqual(
+            new_comment.author,
+            self.user
+        )
+        self.assertEqual(
+            new_comment.post,
+            self.post
+        )
 
     def test_anonymous_can_not_add_comment(self):
         """Аноним не может комментировать посты."""
